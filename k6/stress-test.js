@@ -1,22 +1,21 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-
-export const options = {
-  stages: [
-    { duration: '15s', target: 20 },
-    { duration: '15s', target: 40 },
-    { duration: '15s', target: 70 },
-    { duration: '30s', target: 100 },
-    { duration: '10s', target: 0 },
-  ],
+export let options = {
+  vus: 50,
+  duration: '30s'
 };
 
 export default function () {
-  const res = http.get('http://localhost:4000/notes');
-
-  check(res, {
-    'status 200': (r) => r.status === 200,
+  const payload = JSON.stringify({
+    title: `Test ${__VU}-${Date.now()}`,
+    content: "Prueba de carga",
+    sport: "surf"
   });
 
-  sleep(1);
+  const headers = { 'Content-Type': 'application/json' };
+  const res = http.post('http://localhost:8080/notes', payload, { headers });
+  check(res, {
+    'status 201': (r) => r.status === 201
+  });
+  sleep(0.1);
 }
