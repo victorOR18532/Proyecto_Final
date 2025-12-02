@@ -2,7 +2,14 @@ import React, { useEffect, useState, useMemo } from "react";
 import NoteDetail from "./NoteDetail";
 import Login from "./Login";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:8080"; // nginx LB
+/* -----------------------------
+   🔥 API CORREGIDA
+   - En producción (vite build + nginx): API = ""
+   - En desarrollo (vite dev): usa VITE_API_URL o http://localhost:8080
+--------------------------------*/
+const API = import.meta.env.PROD
+  ? "" 
+  : (import.meta.env.VITE_API_URL || "http://localhost:8080");
 
 export default function App() {
   const [notes, setNotes] = useState([]);
@@ -32,9 +39,7 @@ export default function App() {
     try {
       const res = await fetch(`${API}/notes`);
       const data = await res.json();
-      // Asegurar que cada nota tenga createdAt para filtrar (si backend no lo envía, crearlo aquí)
       const normalized = data.map(n => ({ createdAt: n.createdAt || new Date().toISOString(), ...n }));
-      // ordenar por fecha descendente
       normalized.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
       setNotes(normalized);
     } catch (err) {
@@ -90,14 +95,13 @@ export default function App() {
     if (res.ok) {
       const updated = await res.json();
       setNotes(notes.map(n => n.id === updated.id ? { createdAt: updated.createdAt || n.createdAt, ...updated } : n));
-      setSelectedNote(null); // cerrar modal
+      setSelectedNote(null);
       if (detailNote && detailNote.id === updated.id) setDetailNote(updated);
     } else {
       alert("Error al actualizar nota");
     }
   }
 
-  // filtros y paginación client-side
   const filtered = useMemo(() => {
     return notes.filter(n => {
       if (filterSport && !n.sport?.toLowerCase().includes(filterSport.toLowerCase())) return false;
@@ -116,7 +120,6 @@ export default function App() {
 
   const paginated = filtered.slice((page-1)*perPage, page*perPage);
 
-  // login handlers
   function handleLogin(tokenValue) {
     setToken(tokenValue);
     localStorage.setItem("extToken", tokenValue);
@@ -141,7 +144,6 @@ export default function App() {
         </div>
       </div>
 
-      {/* Form creación */}
       <div className="form">
         <input placeholder="Título" value={title} onChange={e=>setTitle(e.target.value)} />
         <input placeholder="Deporte" value={sport} onChange={e=>setSport(e.target.value)} />
@@ -152,14 +154,12 @@ export default function App() {
 
       <hr/>
 
-      {/* Filtros */}
       <div className="filters">
         <input placeholder="Filtrar por deporte" value={filterSport} onChange={e=>setFilterSport(e.target.value)} />
         <input type="date" value={filterDate} onChange={e=>setFilterDate(e.target.value)} />
         <button onClick={() => { setFilterSport(""); setFilterDate(""); }}>Limpiar filtros</button>
       </div>
 
-      {/* Lista o vista detalle */}
       {detailNote ? (
         <NoteDetail note={detailNote} onBack={() => setDetailNote(null)} onEdit={() => setSelectedNote(detailNote)} />
       ) : (
@@ -181,7 +181,6 @@ export default function App() {
             ))}
           </ul>
 
-          {/* paginación */}
           <div className="pagination">
             <button onClick={()=>setPage(p=>Math.max(1,p-1))} disabled={page===1}>«</button>
             <span> Página {page} / {totalPages} </span>
@@ -190,7 +189,6 @@ export default function App() {
         </>
       )}
 
-      {/* modal de edición */}
       {selectedNote && (
         <div className="modal">
           <div className="modal-content">

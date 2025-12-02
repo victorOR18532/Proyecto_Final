@@ -1,12 +1,351 @@
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ExtremeNotes</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExtremeNotes - Notes App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 700px;
+            width: 100%;
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        h1 {
+            color: #667eea;
+            margin-bottom: 0.5rem;
+            text-align: center;
+            font-size: 2.5rem;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+        }
+        
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: 600;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .notes-list {
+            margin-top: 2rem;
+        }
+        
+        .notes-header {
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 0.5rem;
+        }
+        
+        .note-item {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            position: relative;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-left: 4px solid #667eea;
+        }
+        
+        .note-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .note-item h3 {
+            color: #333;
+            margin-bottom: 0.75rem;
+            padding-right: 100px;
+            font-size: 1.2rem;
+        }
+        
+        .note-item p {
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .delete-btn {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: #e74c3c;
+            padding: 0.6rem 1.2rem;
+            width: auto;
+            font-size: 0.9rem;
+        }
+        
+        .delete-btn:hover {
+            background: #c0392b;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 8px;
+            background: #e8f5e9;
+            color: #2e7d32;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #999;
+        }
+        
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #667eea;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📝 ExtremeNotes</h1>
+        <p class="subtitle">Your simple and powerful note-taking app</p>
+        
+        <div class="input-group">
+            <input type="text" id="title" placeholder="📌 Note title" maxlength="100">
+            <textarea id="content" rows="4" placeholder="✍️ Write your note here..." maxlength="1000"></textarea>
+            <button onclick="createNote()">➕ Add Note</button>
+        </div>
+
+        <div class="notes-list">
+            <h2 class="notes-header">Your Notes</h2>
+            <div id="notesList">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading notes...</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="status" id="status" style="display:none;"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8080/api/notes';
+
+        async function loadNotes() {
+            try {
+                const response = await fetch(`${API_URL}/notes`);
+                if (!response.ok) throw new Error('Failed to fetch notes');
+                
+                const notes = await response.json();
+                displayNotes(notes);
+            } catch (error) {
+                console.error('Error loading notes:', error);
+                document.getElementById('notesList').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <p>Unable to load notes. Please check if the server is running.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function displayNotes(notes) {
+            const notesList = document.getElementById('notesList');
+            
+            if (notes.length === 0) {
+                notesList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <p>No notes yet. Create your first note above!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            notesList.innerHTML = notes.map(note => `
+                <div class="note-item">
+                    <button class="delete-btn" onclick="deleteNote(${note.id})">🗑️ Delete</button>
+                    <h3>${escapeHtml(note.title)}</h3>
+                    <p>${escapeHtml(note.content)}</p>
+                </div>
+            `).join('');
+        }
+
+        async function createNote() {
+            const title = document.getElementById('title').value.trim();
+            const content = document.getElementById('content').value.trim();
+
+            if (!title || !content) {
+                showStatus('⚠️ Please fill in both title and content', true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/notes`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, content })
+                });
+
+                if (!response.ok) throw new Error('Failed to create note');
+
+                document.getElementById('title').value = '';
+                document.getElementById('content').value = '';
+                await loadNotes();
+                showStatus('✅ Note created successfully!');
+            } catch (error) {
+                console.error('Error creating note:', error);
+                showStatus('❌ Error creating note. Please try again.', true);
+            }
+        }
+
+        async function deleteNote(id) {
+            if (!confirm('Are you sure you want to delete this note?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/notes/${id}`, { 
+                    method: 'DELETE' 
+                });
+
+                if (!response.ok) throw new Error('Failed to delete note');
+
+                await loadNotes();
+                showStatus('✅ Note deleted successfully!');
+            } catch (error) {
+                console.error('Error deleting note:', error);
+                showStatus('❌ Error deleting note. Please try again.', true);
+            }
+        }
+
+        function showStatus(message, isError = false) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.style.display = 'block';
+            status.style.background = isError ? '#ffebee' : '#e8f5e9';
+            status.style.color = isError ? '#c62828' : '#2e7d32';
+            
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 3000);
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Allow Enter key to submit in title field
+        document.getElementById('title').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('content').focus();
+            }
+        });
+
+        // Load notes on page load
+        loadNotes();
+    </script>
+</body>
 </html>
